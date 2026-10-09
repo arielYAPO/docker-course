@@ -1,0 +1,57 @@
+name: Deploy application with Ansible
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+
+    steps:
+      # 1. Get project files from GitHub
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. Install Ansible and Docker collection
+      - name: Install Ansible
+        run: |
+          python -m pip install ansible-core==2.20.1
+          ansible-galaxy collection install community.docker
+
+      # 4. Configure SSH access to Takima
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TAKIMA_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/takima_id_rsa
+          chmod 600 ~/.ssh/takima_id_rsa
+          ssh-keyscan -H assah-paul-ariel.yapo.takima.school >> ~/.ssh/known_hosts
+
+      # 5. Configure PostgreSQL password
+      - name: Configure database password
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          printf '%s' "$DB_PASSWORD" > ansible/.db-password
+          chmod 600 ansible/.db-password
+
+      # 6. Deploy application with Ansible
+      - name: Deploy with Ansible
+        run: |
+          ansible-playbook \
+            -i ansible/inventories/setup.yml \
+            ansible/playbook.yml
