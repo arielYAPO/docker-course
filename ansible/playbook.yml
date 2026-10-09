@@ -4,3 +4,7 @@
 
   roles:
     - docker
+    - network
+    - database
+    - app
+    - proxy

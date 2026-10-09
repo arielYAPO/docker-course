@@ -1,0 +1,34 @@
+---
+- name: Create Apache proxy directory on remote server
+  ansible.builtin.file:
+    path: /opt/tp-devops/http-server
+    state: directory
+    mode: '0755'
+
+- name: Copy Apache proxy files to remote server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../http-server/"
+    dest: /opt/tp-devops/http-server/
+
+- name: Build Apache proxy Docker image
+  community.docker.docker_image:
+    name: tp-devops-http-server
+    tag: latest
+    source: build
+    build:
+      path: /opt/tp-devops/http-server
+  vars:
+    ansible_python_interpreter: /opt/docker_venv/bin/python
+
+- name: Start Apache proxy container
+  community.docker.docker_container:
+    name: httpd
+    image: tp-devops-http-server:latest
+    state: started
+    restart_policy: unless-stopped
+    published_ports:
+      - "80:80"
+    networks:
+      - name: my-network
+  vars:
+    ansible_python_interpreter: /opt/docker_venv/bin/python
