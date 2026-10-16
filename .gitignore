@@ -1,1 +1,3 @@
-ansible/.db-password
+tp3-ansible/.db-password
+.idea/
+target/

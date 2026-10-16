@@ -1,0 +1,45 @@
+---
+- name: Create database directory on remote server
+  ansible.builtin.file:
+    path: /opt/tp-devops/database
+    state: directory
+    mode: '0755'
+
+- name: Copy database files to remote server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../tp1-docker/database/"
+    dest: /opt/tp-devops/database/
+
+- name: Build PostgreSQL Docker image
+  community.docker.docker_image:
+    name: tp-devops-database
+    tag: latest
+    source: build
+    build:
+      path: /opt/tp-devops/database
+  vars:
+    ansible_python_interpreter: /opt/docker_venv/bin/python
+
+- name: Create persistent database volume
+  community.docker.docker_volume:
+    name: db-volume
+  vars:
+    ansible_python_interpreter: /opt/docker_venv/bin/python
+
+- name: Start PostgreSQL container
+  community.docker.docker_container:
+    name: database
+    image: tp-devops-database:latest
+    state: started
+    restart_policy: unless-stopped
+    env:
+      POSTGRES_DB: db
+      POSTGRES_USER: usr
+      POSTGRES_PASSWORD: "{{ lookup('ansible.builtin.password', playbook_dir ~ '/.db-password length=24 chars=ascii_letters,digits') }}"
+    networks:
+      - name: my-network
+    volumes:
+      - "db-volume:/var/lib/postgresql/data"
+  vars:
+    ansible_python_interpreter: /opt/docker_venv/bin/python
+  no_log: true

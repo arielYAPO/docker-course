@@ -46,12 +46,12 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          printf '%s' "$DB_PASSWORD" > ansible/.db-password
-          chmod 600 ansible/.db-password
+          printf '%s' "$DB_PASSWORD" > tp3-ansible/.db-password
+          chmod 600 tp3-ansible/.db-password
 
       # 6. Deploy application with Ansible
       - name: Deploy with Ansible
         run: |
           ansible-playbook \
-            -i ansible/inventories/setup.yml \
-            ansible/playbook.yml
+            -i tp3-ansible/inventories/setup.yml \
+            tp3-ansible/playbook.yml
